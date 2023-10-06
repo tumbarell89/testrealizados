@@ -1,0 +1,79 @@
+/*en los documentos enviados los archivos docker-compose.yaml, init-database.sh, load-files.sh vienen explicados en el/* readme que se debian utilizar para levantar en el entorno del ejercicio, los mismos venian con cero información
+*/
+--ejercicio 1
+
+with b1 as (
+SELECT pets."Kind" as kind,
+       pd."Description" AS procedure, --ph."ProcedureType", ph."ProcedureSubCode",
+       count(pets."Kind") over(partition by ph."ProcedureType") as uses,
+       row_number() over(partition by pets."Kind" ) as uses2
+FROM public.pets pets
+     INNER JOIN public."procedures-history" ph ON (pets."PetID" = ph."PetID")
+     INNER JOIN public."procedures-details" pd ON (ph."ProcedureType" = pd."ProcedureType") AND (ph."ProcedureSubCode" = pd."ProcedureSubCode")
+GROUP by pets."Kind",
+         pd."Description",
+         ph."ProcedureType"
+order by pets."Kind",
+         uses desc,
+         uses2 asc
+         )
+  SELECT b1.kind,
+         b1.procedure,
+         b1.uses
+  FROM b1
+  WHERE b1.uses2 <= 3 
+  
+ --ejercicio 2
+ Select         
+        (case when (procedure='Lx Patella Repair') then kind else NULL end) as Lx_Patella_Repair,
+        (case when (procedure='Rabies') then kind else NULL end) as Rabies,
+        (case when (procedure='Bath') then kind else NULL end) as Bath,
+        (case when (procedure='Radical Mastectomy') then kind else NULL end) as Radical_Mastectomy,
+        (case when (procedure='Flea Spray') then kind else NULL end) as Flea_Spray,
+        (case when (procedure='Cast Removal') then kind else NULL end) as Cast_Removal,
+        (case when (procedure='Declaw') then kind else NULL end) as Declaw,
+        (case when (procedure='Umbilical') then kind else NULL end) as Umbilical
+        
+from        
+        (with b1 as (
+SELECT pets."Kind" as kind,
+       pd."Description" AS procedure, --ph."ProcedureType", ph."ProcedureSubCode",
+       count(pets."Kind") over(partition by ph."ProcedureType") as uses,
+       row_number() over(partition by pets."Kind" ) as uses2
+FROM public.pets pets
+     INNER JOIN public."procedures-history" ph ON (pets."PetID" = ph."PetID")
+     INNER JOIN public."procedures-details" pd ON (ph."ProcedureType" = pd."ProcedureType") AND (ph."ProcedureSubCode" = pd."ProcedureSubCode")
+GROUP by pets."Kind",
+         pd."Description",
+         ph."ProcedureType"
+order by pets."Kind",
+         uses desc,
+         uses2 asc
+         )
+  SELECT b1.kind,
+         b1.procedure,
+         b1.uses
+  FROM b1
+  WHERE b1.uses2 <= 3) busqueda
+		 
+		 
+--ejerecicio 3
+SELECT 
+  pets."Kind",
+  pets."PetID",
+  pets."Name",
+  pets."Gender",
+  pets."Age",
+  pets."OwnerID"
+FROM
+  public.pets pets
+  where pets."OwnerID" in (
+  SELECT 
+  ow.ownerid
+FROM
+  public.pets pets
+  INNER JOIN public.owners ow ON (pets."OwnerID" = ow.ownerid)
+  group by ow.ownerid, pets."Kind"
+  HAVING count (pets."OwnerID") > 1 and count (pets."Kind") > 1
+  )
+   
